@@ -26,3 +26,4 @@ tarpaulin-report.*
 
 # node modules
 node_modules
+merkle-proof
