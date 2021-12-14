@@ -1,22 +1,22 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{HumanAddr, Uint128};
 
 #[derive(Serialize, Deserialize, JsonSchema)]
-pub struct InstantiateMsg {
+pub struct InitMsg {
     /// Owner if none set to info.sender.
-    pub owner: Option<String>,
-    pub cw20_token_address: String,
+    pub owner: Option<HumanAddr>,
+    pub cw20_token_address: HumanAddr,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum ExecuteMsg {
+pub enum HandleMsg {
     UpdateConfig {
         /// NewOwner if non sent, contract gets locked. Recipients can receive airdrops
         /// but owner cannot register new stages.
-        new_owner: Option<String>,
+        new_owner: Option<HumanAddr>,
     },
     RegisterMerkleRoot {
         /// MerkleRoot is hex-encoded merkle root.
@@ -37,7 +37,7 @@ pub enum QueryMsg {
     Config {},
     MerkleRoot { stage: u8 },
     LatestStage {},
-    IsClaimed { stage: u8, address: String },
+    IsClaimed { stage: u8, address: HumanAddr },
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
