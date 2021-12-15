@@ -1,9 +1,8 @@
 use cosmwasm_std::{
     attr, to_binary, Binary, Deps, DepsMut, Env, HandleResponse, HumanAddr, InitResponse,
-    MessageInfo, StdResult, Uint128, WasmMsg,
+    MessageInfo, StdResult,
 };
 
-use cw20::Cw20HandleMsg;
 use cw_storage_plus::U8Key;
 use sha2::Digest;
 use std::convert::TryInto;
@@ -18,10 +17,7 @@ use crate::state::{Config, CLAIM, CONFIG, LATEST_STAGE, MERKLE_ROOT};
 pub fn init(deps: DepsMut, _env: Env, info: MessageInfo, msg: InitMsg) -> StdResult<InitResponse> {
     let owner = msg.owner.unwrap_or(info.sender);
 
-    let config = Config {
-        owner: Some(owner),
-        cw20_token_address: msg.cw20_token_address,
-    };
+    let config = Config { owner: Some(owner) };
     CONFIG.save(deps.storage, &config)?;
 
     let stage = 0;
@@ -41,11 +37,9 @@ pub fn handle(
         HandleMsg::RegisterMerkleRoot { merkle_root } => {
             execute_register_merkle_root(deps, env, info, merkle_root)
         }
-        HandleMsg::Claim {
-            stage,
-            amount,
-            proof,
-        } => execute_claim(deps, env, info, stage, amount, proof),
+        HandleMsg::Claim { stage, data, proof } => {
+            execute_claim(deps, env, info, stage, data, proof)
+        }
     }
 }
 
@@ -96,7 +90,6 @@ pub fn execute_register_merkle_root(
     let stage = LATEST_STAGE.update(deps.storage, |stage| -> StdResult<_> { Ok(stage + 1) })?;
 
     MERKLE_ROOT.save(deps.storage, U8Key::from(stage), &merkle_root)?;
-    LATEST_STAGE.save(deps.storage, &stage)?;
 
     Ok(HandleResponse {
         data: None,
@@ -114,7 +107,7 @@ pub fn execute_claim(
     _env: Env,
     info: MessageInfo,
     stage: u8,
-    amount: Uint128,
+    data: String,
     proof: Vec<String>,
 ) -> Result<HandleResponse, ContractError> {
     // verify not claimed
@@ -125,10 +118,9 @@ pub fn execute_claim(
         return Err(ContractError::Claimed {});
     }
 
-    let config = CONFIG.load(deps.storage)?;
     let merkle_root = MERKLE_ROOT.load(deps.storage, stage.into())?;
 
-    let user_input = format!("{}{}", info.sender, amount);
+    let user_input = format!("{{\"address\":\"{}\",\"data\":{}}}", info.sender, data);
     let hash = sha2::Sha256::digest(user_input.as_bytes())
         .as_slice()
         .try_into()
@@ -156,20 +148,12 @@ pub fn execute_claim(
 
     let res = HandleResponse {
         data: None,
-        messages: vec![WasmMsg::Execute {
-            contract_addr: config.cw20_token_address,
-            msg: to_binary(&Cw20HandleMsg::Transfer {
-                recipient: info.sender.clone(),
-                amount,
-            })?,
-            send: vec![],
-        }
-        .into()],
+        messages: vec![],
         attributes: vec![
             attr("action", "claim"),
             attr("stage", stage.to_string()),
             attr("address", info.sender),
-            attr("amount", amount),
+            attr("data", data),
         ],
     };
     Ok(res)
@@ -190,7 +174,6 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let cfg = CONFIG.load(deps.storage)?;
     Ok(ConfigResponse {
         owner: cfg.owner.map(|o| o.to_string()),
-        cw20_token_address: cfg.cw20_token_address.to_string(),
     })
 }
 

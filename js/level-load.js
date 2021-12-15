@@ -14,7 +14,7 @@ const db = level('merkle-proof', {
   // load data
   const rootHex =
     process.argv[2] ||
-    '5dc887416ba17046a596c505c62a3a0eb98353c56f4a773d6fa93d64d6c437a4';
+    'bca58c8e5c526508fb76660b7891354cf09c464f0bc3941e95ba46a5b048d757';
   const keys = await db.get(Buffer.from(rootHex, 'hex'));
 
   const leaves = [];
@@ -26,7 +26,9 @@ const db = level('merkle-proof', {
   const hexLeaf = sha256(
     JSON.stringify({
       address: 'wasm1k9hwzxs889jpvd7env8z49gad3a3633vg350tq',
-      amount: '666666666'
+      data: {
+        amount: '666666666'
+      }
     })
   ).toString('hex');
 

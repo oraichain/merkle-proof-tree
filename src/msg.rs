@@ -1,13 +1,12 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{HumanAddr, Uint128};
+use cosmwasm_std::HumanAddr;
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct InitMsg {
     /// Owner if none set to info.sender.
     pub owner: Option<HumanAddr>,
-    pub cw20_token_address: HumanAddr,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -22,10 +21,10 @@ pub enum HandleMsg {
         /// MerkleRoot is hex-encoded merkle root.
         merkle_root: String,
     },
-    /// Claim does not check if contract has enough funds, owner must ensure it.
+    /// Claim check the data is valid for a sender, each stage related to a merkle root.
     Claim {
         stage: u8,
-        amount: Uint128,
+        data: String, // json-encoded
         /// Proof is hex-encoded merkle proof.
         proof: Vec<String>,
     },
@@ -44,7 +43,6 @@ pub enum QueryMsg {
 #[serde(rename_all = "snake_case")]
 pub struct ConfigResponse {
     pub owner: Option<String>,
-    pub cw20_token_address: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

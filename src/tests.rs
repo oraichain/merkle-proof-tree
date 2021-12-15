@@ -6,13 +6,11 @@ use crate::msg::{
     ConfigResponse, HandleMsg, InitMsg, IsClaimedResponse, LatestStageResponse, MerkleRootResponse,
     QueryMsg,
 };
-use cw20::Cw20HandleMsg;
+
 use sha2::Digest;
 
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-use cosmwasm_std::{
-    attr, coins, from_binary, from_slice, to_binary, CosmosMsg, HumanAddr, Uint128, WasmMsg,
-};
+use cosmwasm_std::{attr, coins, from_binary, from_slice, HumanAddr};
 use serde::Deserialize;
 
 const DENOM: &str = "ORAI";
@@ -23,7 +21,6 @@ fn proper_instantiation() {
 
     let msg = InitMsg {
         owner: Some("owner0000".into()),
-        cw20_token_address: "anchor0000".into(),
     };
 
     let env = mock_env();
@@ -36,7 +33,6 @@ fn proper_instantiation() {
     let res = query(deps.as_ref(), env.clone(), QueryMsg::Config {}).unwrap();
     let config: ConfigResponse = from_binary(&res).unwrap();
     assert_eq!("owner0000", config.owner.unwrap().as_str());
-    assert_eq!("anchor0000", config.cw20_token_address.as_str());
 
     let res = query(deps.as_ref(), env, QueryMsg::LatestStage {}).unwrap();
     let latest_stage: LatestStageResponse = from_binary(&res).unwrap();
@@ -47,10 +43,7 @@ fn proper_instantiation() {
 fn update_config() {
     let mut deps = mock_dependencies(&coins(100000, DENOM));
 
-    let msg = InitMsg {
-        owner: None,
-        cw20_token_address: "anchor0000".into(),
-    };
+    let msg = InitMsg { owner: None };
 
     let env = mock_env();
     let info = mock_info("owner0000", &[]);
@@ -86,7 +79,6 @@ fn register_merkle_root() {
 
     let msg = InitMsg {
         owner: Some("owner0000".into()),
-        cw20_token_address: "anchor0000".into(),
     };
 
     let env = mock_env();
@@ -137,8 +129,8 @@ const TEST_DATA_2: &[u8] = include_bytes!("../testdata/airdrop_stage_2_test_data
 
 #[derive(Deserialize, Debug)]
 struct Encoded {
-    account: HumanAddr,
-    amount: Uint128,
+    address: HumanAddr,
+    data: String,
     root: String,
     proofs: Vec<String>,
 }
@@ -150,7 +142,10 @@ fn claim() {
     deps.api.canonical_length = 54;
     let test_data: Encoded = from_slice(TEST_DATA_1).unwrap();
 
-    let user_input = format!("{}{}", test_data.account, test_data.amount);
+    let user_input = format!(
+        "{{\"address\":\"{}\",\"data\":{}}}",
+        test_data.address, test_data.data
+    );
     let hash: [u8; 32] = sha2::Sha256::digest(user_input.as_bytes())
         .as_slice()
         .try_into()
@@ -176,7 +171,6 @@ fn claim() {
 
     let msg = InitMsg {
         owner: Some("owner0000".into()),
-        cw20_token_address: "token0000".into(),
     };
 
     let env = mock_env();
@@ -191,32 +185,22 @@ fn claim() {
     let _res = handle(deps.as_mut(), env, info, msg).unwrap();
 
     let msg = HandleMsg::Claim {
-        amount: test_data.amount,
+        data: test_data.data.to_string(),
         stage: 1u8,
         proof: test_data.proofs,
     };
 
     let env = mock_env();
-    let info = mock_info(test_data.account.as_str(), &[]);
+    let info = mock_info(test_data.address.as_str(), &[]);
     let res = handle(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
-    let expected = CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: "token0000".into(),
-        send: vec![],
-        msg: to_binary(&Cw20HandleMsg::Transfer {
-            recipient: test_data.account.clone(),
-            amount: test_data.amount,
-        })
-        .unwrap(),
-    });
-    assert_eq!(res.messages, vec![expected]);
 
     assert_eq!(
         res.attributes,
         vec![
             attr("action", "claim"),
             attr("stage", "1"),
-            attr("address", test_data.account.clone()),
-            attr("amount", test_data.amount)
+            attr("address", test_data.address.clone()),
+            attr("data", test_data.data)
         ]
     );
 
@@ -227,7 +211,7 @@ fn claim() {
                 env.clone(),
                 QueryMsg::IsClaimed {
                     stage: 1,
-                    address: test_data.account
+                    address: test_data.address
                 }
             )
             .unwrap()
@@ -253,32 +237,22 @@ fn claim() {
 
     // Claim next airdrop
     let msg = HandleMsg::Claim {
-        amount: test_data.amount,
+        data: test_data.data.to_string(),
         stage: 2u8,
         proof: test_data.proofs,
     };
 
     let env = mock_env();
-    let info = mock_info(test_data.account.as_str(), &[]);
+    let info = mock_info(test_data.address.as_str(), &[]);
     let res = handle(deps.as_mut(), env, info, msg).unwrap();
-    let expected = CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: "token0000".into(),
-        send: vec![],
-        msg: to_binary(&Cw20HandleMsg::Transfer {
-            recipient: test_data.account.clone(),
-            amount: test_data.amount,
-        })
-        .unwrap(),
-    });
-    assert_eq!(res.messages, vec![expected]);
 
     assert_eq!(
         res.attributes,
         vec![
             attr("action", "claim"),
             attr("stage", "2"),
-            attr("address", test_data.account),
-            attr("amount", test_data.amount)
+            attr("address", test_data.address),
+            attr("data", test_data.data)
         ]
     );
 }
@@ -289,7 +263,6 @@ fn owner_freeze() {
 
     let msg = InitMsg {
         owner: Some("owner0000".into()),
-        cw20_token_address: "token0000".into(),
     };
 
     let env = mock_env();

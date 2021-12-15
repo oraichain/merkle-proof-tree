@@ -77,46 +77,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw0"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c15dcd49d7645987af064fb72285721af0a4054a8f8c3f970e8b89d496713aec"
-dependencies = [
- "cosmwasm-std",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "cw20"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "026f2d97b915e1ff84a45cbd995a3ce86f37c4f0b30466146374421bbe8ba71c"
-dependencies = [
- "cosmwasm-std",
- "cw0",
- "schemars",
- "serde",
-]
-
-[[package]]
-name = "cw20-merkle-airdrop"
-version = "0.7.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus",
- "cw0",
- "cw20",
- "hex",
- "schemars",
- "serde",
- "sha2",
- "thiserror",
-]
-
-[[package]]
 name = "digest"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -152,6 +112,20 @@ name = "libc"
 version = "0.2.108"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8521a1b57e76b1ec69af7599e75e38e7b7fad6610f037db8c79b127201b5d119"
+
+[[package]]
+name = "merkle-proof-tree"
+version = "0.7.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "hex",
+ "schemars",
+ "serde",
+ "sha2",
+ "thiserror",
+]
 
 [[package]]
 name = "opaque-debug"

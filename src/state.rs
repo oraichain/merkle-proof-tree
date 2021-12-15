@@ -8,7 +8,6 @@ use cw_storage_plus::{Item, Map, U8Key};
 pub struct Config {
     /// Owner If None set, contract is frozen.
     pub owner: Option<HumanAddr>,
-    pub cw20_token_address: HumanAddr,
 }
 
 pub const CONFIG_KEY: &str = "config";
